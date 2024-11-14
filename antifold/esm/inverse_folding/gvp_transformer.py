@@ -3,22 +3,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import argparse
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
-from scipy.spatial import transform
-from torch import Tensor, nn
+from torch import nn
 
-from antifold.esm.data import Alphabet
-
-from .features import DihedralFeatures
-from .gvp_encoder import GVPEncoder
 from .gvp_transformer_encoder import GVPTransformerEncoder
-from .gvp_utils import unflatten_graph
 from .transformer_decoder import TransformerDecoder
-from .util import CoordBatchConverter, rotate
+from .util import CoordBatchConverter
 
 
 class GVPTransformerModel(nn.Module):

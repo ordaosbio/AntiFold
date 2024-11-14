@@ -3,24 +3,17 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import json
-import math
 from typing import List, Sequence, Tuple
 
 import biotite.structure
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import torch.utils.data as data
+from antifold.esm.data import BatchConverter
 from biotite.sequence import ProteinSequence
 from biotite.structure import filter_backbone, get_chains
 from biotite.structure.io import pdb, pdbx
 from biotite.structure.residues import get_residues
-from scipy.spatial import transform
-from scipy.stats import special_ortho_group
-
-from antifold.esm.data import BatchConverter
 
 
 def load_structure(fpath, chain=None):
@@ -198,7 +191,6 @@ def rbf(values, v_min, v_max, n_bins=16):
     rbf_centers = torch.linspace(v_min, v_max, n_bins, device=values.device)
     rbf_centers = rbf_centers.view([1] * len(values.shape) + [-1])
     rbf_std = (v_max - v_min) / n_bins
-    v_expand = torch.unsqueeze(values, -1)
     z = (values.unsqueeze(-1) - rbf_centers) / rbf_std
     return torch.exp(-(z**2))
 

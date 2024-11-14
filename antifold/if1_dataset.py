@@ -1,21 +1,20 @@
 import logging
-
-log = logging.getLogger(__name__)
-
-import sys
-
-sys.path.insert(0, ".")
-
 import os
+import sys
 from typing import Tuple
 
 import numpy as np
 import pandas as pd
 import torch
 
-from antifold.esm_multichain_util_custom import (concatenate_coords_any,
-                                                 concatenate_coords_HL,
-                                                 load_complex_coords)
+log = logging.getLogger(__name__)
+sys.path.insert(0, ".")
+
+from antifold.esm_multichain_util_custom import (  # noqa: E402
+    concatenate_coords_any,
+    concatenate_coords_HL,
+    load_complex_coords,
+)
 
 
 class InverseData(torch.utils.data.Dataset):
@@ -130,7 +129,7 @@ class InverseData(torch.utils.data.Dataset):
 
     def populate(
         self,
-        pdbs_csv_or_dataframe: 'str, "path or pd.DataFrame"',
+        pdbs_csv_or_dataframe: "str|pd.DataFrame",
         pdb_dir: str,
         verbose: int = 1,
     ):

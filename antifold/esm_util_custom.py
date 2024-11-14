@@ -4,9 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import logging
-
-log = logging.getLogger(__name__)
-
 from typing import List, Sequence, Tuple
 
 import biotite.structure
@@ -17,6 +14,8 @@ from biotite.sequence import ProteinSequence
 from biotite.structure import filter_backbone, get_chains
 from biotite.structure.io import pdb, pdbx
 from biotite.structure.residues import get_residues
+
+log = logging.getLogger(__name__)
 
 
 def load_structure_fast(fpath, chain=None):

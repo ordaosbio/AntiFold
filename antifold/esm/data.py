@@ -8,11 +8,9 @@ import os
 import pickle
 import re
 import shutil
-from pathlib import Path
 from typing import List, Sequence, Tuple, Union
 
 import torch
-
 from antifold.esm.constants import proteinseq_toks
 
 RawMSA = Sequence[Tuple[str, str]]

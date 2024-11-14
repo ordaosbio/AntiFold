@@ -6,13 +6,12 @@
 # LICENSE file in the root directory of this source tree.
 
 import math
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import torch
 import torch.nn as nn
-from torch import Tensor
-
 from antifold.esm.modules import SinusoidalPositionalEmbedding
+from torch import Tensor
 
 from .transformer_layer import TransformerDecoderLayer
 
@@ -176,17 +175,15 @@ class TransformerDecoder(nn.Module):
         if prev_output_tokens.eq(self.padding_idx).any():
             self_attn_padding_mask = prev_output_tokens.eq(self.padding_idx)
 
-        # decoder layers
-        attn: Optional[Tensor] = None
         # Include encoder output #MH
         inner_states: List[Optional[Tensor]] = [enc, x]
-        for idx, layer in enumerate(self.layers):
+        for _, layer in enumerate(self.layers):
             if incremental_state is None:
                 self_attn_mask = self.buffered_future_mask(x)
             else:
                 self_attn_mask = None
 
-            x, layer_attn, _ = layer(
+            x, _, _ = layer(
                 x,
                 enc,
                 padding_mask,

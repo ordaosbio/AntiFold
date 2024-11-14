@@ -1,16 +1,12 @@
 import glob
 import logging
 import os
-import sys
-import warnings
-import urllib.request
-from pathlib import Path
-
-ROOT_PATH = Path(os.path.dirname(__file__)).parent
-sys.path.insert(0, ROOT_PATH)
-
 import re
+import sys
+import urllib.request
+import warnings
 from collections import OrderedDict
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -18,11 +14,14 @@ import torch
 import torch.nn.functional as F
 from Bio import SeqIO
 from Bio.Seq import Seq
-from biotite.structure.io import pdb
+from biotite.structure.io import load_structure
 
-import antifold.esm
-from antifold.esm_util_custom import CoordBatchConverter_mask_gpu
-from antifold.if1_dataset import InverseData
+ROOT_PATH = Path(os.path.dirname(__file__)).parent
+sys.path.insert(0, ROOT_PATH)
+
+import antifold.esm  # noqa: E402
+from antifold.esm_util_custom import CoordBatchConverter_mask_gpu  # noqa: E402
+from antifold.if1_dataset import InverseData  # noqa: E402
 
 log = logging.getLogger(__name__)
 
@@ -62,8 +61,7 @@ IMGT_dict = {
 
 def extract_chains_biotite(pdb_file):
     """Extract chains in order"""
-    pdbf = pdb.PDBFile.read(pdb_file)
-    structure = pdb.get_structure(pdbf, model=1)
+    structure = load_structure(pdb_file)
     return pd.unique(structure.chain_id)
 
 
@@ -141,7 +139,8 @@ def load_model(checkpoint_path: str = ""):
 
     if not os.path.exists(model_path):
         log.warning(
-            f"Downloading AntiFold model weights from https://opig.stats.ox.ac.uk/data/downloads/AntiFold/models/model.pt to {model_path}"
+            "Downloading AntiFold model weights from" +
+            f"https://opig.stats.ox.ac.uk/data/downloads/AntiFold/models/model.pt to {model_path}"
         )
         url = "https://opig.stats.ox.ac.uk/data/downloads/AntiFold/models/model.pt"
         filename = model_path
@@ -157,7 +156,7 @@ def load_model(checkpoint_path: str = ""):
     # Download IF1 weights
     if checkpoint_path == "ESM-IF1":
         log.info(
-            f"NOTE: Loading ESM-IF1 weights instead of fine-tuned AntiFold weights"
+            "NOTE: Loading ESM-IF1 weights instead of fine-tuned AntiFold weights"
         )
         # Suppress regression weights warning - not needed
         with warnings.catch_warnings():
@@ -182,9 +181,6 @@ def load_model(checkpoint_path: str = ""):
 
 def get_dataset_pdb_name_chainsname_res_posins_chains(dataset, idx):
     """Gets PDB sequence, position+insertion codes and chains from dataset"""
-
-    # PDB path
-    pdb_path = dataset.pdb_info_dict[idx]["pdb_path"]
 
     # PDB names
     pdb_name = dataset.pdb_info_dict[idx]["pdb"]
@@ -497,6 +493,86 @@ def calc_pos_perplexity(df):
     return perplexities.numpy()
 
 
+def sample_new_sequences_CDR(
+    df,
+    t=0.20,
+    imgt_regions=["CDR1", "CDR2", "CDR3"],
+    return_mutation_df=False,
+    limit_expected_variation=True,
+    verbose=False,
+):
+    """Samples new sequences only varying at H/L CDRs"""
+
+    def _sample_cdr_seq(df, imgt_regions, t=0.20):
+        """DF to sampled seq"""
+
+        # CDR1+2+3 mask
+        region_mask = get_imgt_mask(df, imgt_regions)
+
+        # Probabilities after scaling with temp
+        probs = get_temp_probs(df, t=t)
+        probs_cdr = probs[region_mask]
+
+        # Sampled tokens and sequence
+        sampled_tokens = torch.multinomial(probs_cdr, 1).squeeze(-1)
+        sampled_seq = np.array([amino_list[i] for i in sampled_tokens])
+
+        return sampled_seq
+
+    # Prepare to sample new H + L sequences
+    seqs = []
+    for chain in df.pdb_chain.unique():
+        dfc = df[df.pdb_chain == chain]
+        seq = get_df_seq(dfc)
+
+        if len(imgt_regions) > 0:
+            region_mask = get_imgt_mask(dfc, imgt_regions)
+            seq[region_mask] = _sample_cdr_seq(dfc, imgt_regions, t=t)
+        seqs.append(seq)
+
+    # Use for later
+    sampled_seq = np.concatenate(seqs)
+    region_mask = get_imgt_mask(df, imgt_regions)
+
+    # Mismatches vs predicted (CDR only)
+    pred_seq = get_df_seq_pred(df)
+    mismatch_idxs_pred_cdr = np.where(
+        (sampled_seq[region_mask] != pred_seq[region_mask])
+    )[0]
+
+    # Mismatches vs original (all)
+    orig_seq = get_df_seq(df)
+    mismatch_idxs_orig = np.where((sampled_seq != orig_seq))[0]
+
+    # Limit mutations (backmutate) to as many expected from temperature sampling
+    if limit_expected_variation:
+        backmutate = len(mismatch_idxs_orig) - len(mismatch_idxs_pred_cdr)
+
+        if backmutate >= 1:
+            backmutate_idxs = np.random.choice(
+                mismatch_idxs_orig, size=backmutate, replace=False
+            )
+            sampled_seq[backmutate_idxs] = orig_seq[backmutate_idxs]
+            H_sampled = sampled_seq[: len(df[df.pdb_chain == "H"])]
+            L_sampled = sampled_seq[-len(df[df.pdb_chain == "L"]):]
+
+    # Variables for calculating mismatches
+    orig_seq = get_df_seq(df)
+
+    # DataFrame with sampled mutations
+    if return_mutation_df:
+        mut_list = np.where(sampled_seq != orig_seq)[0]
+        df_mut = df.loc[
+            mut_list, ["pdb_res", "top_res", "pdb_posins", "pdb_chain"]
+        ].copy()
+        df_mut.insert(1, "aa_sampled", sampled_seq[mut_list])
+
+        return H_sampled, L_sampled, df_mut
+
+    return np.concatenate(seqs), df
+
+
+
 def sample_new_sequences_CDR_HL(
     df,
     t=0.20,
@@ -660,24 +736,23 @@ def sample_from_df_logits(
     seed=42,
 ):
     # Get original H/L sequence
-    H_orig, L_orig = get_df_seqs_HL(df_logits)
+    # H_orig, L_orig = get_df_seqs_HL(df_logits)
 
     # Only sampling from heavy, light chains
-    df_logits_HL = df_logits.iloc[:len(H_orig) + len(L_orig), :]
-    df_logits_HL.name = df_logits.name
+    # df_logits_HL = df_logits.iloc[:len(H_orig) + len(L_orig), :]
+    # df_logits_HL.name = df_logits.name
 
     # Stats
-    seq = "".join(H_orig) + "".join(L_orig)
+    seq = "".join(df_logits.pdb_res)
     _, global_score = get_sequence_sampled_global_score(
-        seq, df_logits_HL, regions_to_mutate
+        seq, df_logits, regions_to_mutate
     )
 
     # Save to FASTA dict
     fasta_dict = OrderedDict()
-    _id = f"{df_logits_HL.name}"
-    desc = f", score={global_score:.4f}, global_score={global_score:.4f}, regions={regions_to_mutate}, model_name=AntiFold, seed={seed}"
-    seq = "".join(H_orig) + "/" + "".join(L_orig)
-    fasta_dict[_id] = SeqIO.SeqRecord(Seq(seq), id=_id, name="", description=desc)
+    _id = f"{df_logits.name}"
+    desc = f", score={global_score:.4f}, regions={regions_to_mutate}, model_name=AntiFold, seed={seed}"
+    fasta_dict[_id] = SeqIO.SeqRecord(Seq(seq), id=_id, name="", description=desc, annotations={"global_score": global_score})
 
     if verbose:
         log.info(f"{_id}: {desc}")
@@ -689,35 +764,33 @@ def sample_from_df_logits(
         # Sample sequences n times
         for n in range(sample_n):
             # Get mutated H/L sequence
-            H_mut, L_mut, df_mut = sample_new_sequences_CDR_HL(
-                df_logits_HL,  # DataFrame with residue probabilities
+            seq_mut, df_mut = sample_new_sequences_CDR(
+                df_logits,  # DataFrame with residue probabilities
                 t=t,  # Sampling temperature
                 imgt_regions=regions_to_mutate,  # Region to sample
-                exclude_heavy=exclude_heavy,  # Allow mutations in heavy chain
-                exclude_light=exclude_light,  # Allow mutation in light chain
-                limit_expected_variation=limit_expected_variation,  # Only mutate as many positions are expected from temperature
-                verbose=verbose,
+                limit_expected_variation=limit_expected_variation,  # mutate as many positions are expected from temperature
             )
 
             # Original sequence
-            seq_orig = "".join(H_orig) + "".join(L_orig)
+            seq_orig = get_df_seq(df_logits)
 
             # Sequence recovery and mismatches
-            correct_matches = (H_orig == H_mut).sum() + (L_orig == L_mut).sum()
+            correct_matches = (seq_orig == seq_mut).sum()
             seq_recovery = correct_matches / len(seq_orig)
-            n_mut = (H_orig != H_mut).sum() + (L_orig != L_mut).sum()
+            n_mut = (seq_orig != seq_mut).sum()
 
-            seq_mut = "".join(H_mut) + "".join(L_mut)
+            # seq_mut = "".join(H_mut) + "".join(L_mut)
             score_sampled, global_score = get_sequence_sampled_global_score(
-                seq_mut, df_logits_HL, regions_to_mutate
+                seq_mut, df_logits, regions_to_mutate
             )
 
             # Save to FASTA dict
-            _id = f"{df_logits_HL.name}__{n+1}"
-            desc = f"T={t:.2f}, sample={n+1}, score={score_sampled:.4f}, global_score={global_score:.4f}, seq_recovery={seq_recovery:.4f}, mutations={n_mut}"
-            seq_mut = "".join(H_mut) + "/" + "".join(L_mut)
+            _id = f"{df_logits.name}__{n+1}"
+            desc = f"T={t:.2f}, sample={n+1}, score={score_sampled:.4f}, seq_recovery={seq_recovery:.4f}"
+            # seq_mut = "".join(H_mut) + "/" + "".join(L_mut)
             fasta_dict[_id] = SeqIO.SeqRecord(
-                Seq(seq_mut), id="", name="", description=desc
+                Seq("".join(seq_mut)), id="", name="", description=desc, 
+                annotations={"global_score": global_score, "mutations": n_mut}
             )
 
             if verbose:

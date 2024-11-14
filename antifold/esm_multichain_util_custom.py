@@ -9,14 +9,13 @@ from typing import List
 
 import biotite.structure
 import numpy as np
+from antifold.esm.inverse_folding.util import get_encoder_output, get_sequence_loss, load_structure
+
 # import torch
 from biotite.sequence import ProteinSequence
+
 # from biotite.structure.residues import get_residues
 from biotite.structure.residues import get_residue_starts
-
-from antifold.esm.inverse_folding.util import (get_encoder_output,
-                                               get_sequence_loss,
-                                               load_structure)
 
 
 def get_atom_coords_residuewise(atoms: List[str], struct: biotite.structure.AtomArray):
@@ -201,7 +200,7 @@ def concatenate_coords_HL(
 
     if not len(seq_str) == len(coords_concatenated) == len(pos_concatenated):
         print(
-            f"Length mismatch: seq_str {len(seq_str)} coords_concatenated {len(coords_concatenated)} pos_concatenated {len(pos_concatenated)}"
+            f"Length mismatch: {len(seq_str)} {len(coords_concatenated)} {len(pos_concatenated)}"
         )
         raise ValueError
 
@@ -262,7 +261,7 @@ def concatenate_coords_any(
 
     if not len(seq_str) == len(coords_concatenated) == len(pos_concatenated):
         print(
-            f"Length mismatch: seq_str {len(seq_str)} coords_concatenated {len(coords_concatenated)} pos_concatenated {len(pos_concatenated)}"
+            f"Length mismatch: {len(seq_str)} {len(coords_concatenated)} {len(pos_concatenated)}"
         )
         raise ValueError
 

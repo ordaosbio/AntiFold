@@ -7,12 +7,9 @@
 
 import argparse
 import math
-from typing import Dict, List, Optional
 
 import torch
 import torch.nn as nn
-from torch import Tensor
-
 from antifold.esm.modules import SinusoidalPositionalEmbedding
 
 from .features import DihedralFeatures, GVPInputFeaturizer

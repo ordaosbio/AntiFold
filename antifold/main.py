@@ -1,30 +1,33 @@
 import logging
 import os
 import sys
+from argparse import ArgumentParser, RawTextHelpFormatter
+
 # import warnings
-import urllib.request
 from pathlib import Path
+
+import pandas as pd
 
 ROOT_PATH = Path(os.path.dirname(__file__)).parent
 sys.path.insert(0, ROOT_PATH)
 
-from argparse import ArgumentParser, RawTextHelpFormatter
 
-import numpy as np
-import pandas as pd
-
-from antifold.antiscripts import (df_logits_to_logprobs,
-                                  extract_chains_biotite, generate_pdbs_csv,
-                                  get_pdbs_logits, load_model,
-                                  sample_from_df_logits, write_fasta_to_dir,
-                                  visualize_mutations)
+from antifold.antiscripts import (  # noqa: E402
+    df_logits_to_logprobs,
+    extract_chains_biotite,
+    generate_pdbs_csv,
+    get_pdbs_logits,
+    load_model,
+    sample_from_df_logits,
+    write_fasta_to_dir,
+)
 
 log = logging.getLogger(__name__)
 
 
 def cmdline_args():
     # Make parser object
-    usage = f"""
+    usage = """
 # Run AntiFold on single PDB (or CIF) file
 python antifold/main.py \
     --out_dir output/single_pdb \
@@ -49,7 +52,7 @@ python antifold/main.py \
     --custom_chain_mode
     """
     p = ArgumentParser(
-        description="Predict antibody variable domain inverse folding probabilities and sample sequences with maintained fold.\nPDB structures should be IMGT-numbered, paired heavy and light chain variable domains (positions 1-128).\n\nFor IMGT numbering PDBs use SAbDab or https://opig.stats.ox.ac.uk/webapps/sabdab-sabpred/sabpred/anarci/",
+        description="Predict antibody variable domain inverse folding probabilities and sample sequences with maintained fold.\nPDB structures should be IMGT-numbered, paired heavy and light chain variable domains (positions 1-128).\n\nFor IMGT numbering PDBs use SAbDab or https://opig.stats.ox.ac.uk/webapps/sabdab-sabpred/sabpred/anarci/", # noqa: E501
         formatter_class=RawTextHelpFormatter,
         usage=usage,
     )
@@ -120,7 +123,7 @@ python antifold/main.py \
     p.add_argument(
         "--sampling_temp",
         default="0.20",
-        help="A string of temperatures e.g. '0.20 0.25 0.50' (default 0.20). Sampling temperature for amino acids. Suggested values 0.10, 0.15, 0.20, 0.25, 0.30. Higher values will lead to more diversity.",
+        help="A string of temperatures e.g. '0.20 0.25 0.50' (default 0.20). Sampling temperature for amino acids. Suggested values 0.10, 0.15, 0.20, 0.25, 0.30. Higher values will lead to more diversity.", # noqa: E501
     )
 
     p.add_argument(
@@ -170,7 +173,7 @@ python antifold/main.py \
     p.add_argument(
         "--model_path",
         default="",
-        help="Alternative model weights (default models/model.pt). See --use_esm_if1_weights flag to use ESM-IF1 weights instead of AntiFold",
+        help="Alternative model weights (default models/model.pt). See --use_esm_if1_weights flag to use ESM-IF1 weights instead of AntiFold", # noqa: E501
     )
 
     p.add_argument(
@@ -253,26 +256,13 @@ def check_valid_input(args):
     # Check either: PDB file, PDB dir or PDBs CSV inputted
     if not (args.pdb_file or args.pdb_dir):
         log.error(
-            f"""Please choose one of:
+            """Please choose one of:
         1) PDB file (--pdb_file). We heavily recommend specifying --heavy_chain [letter] and --light_chain [letter]
-        2) PDB directory (--pdb_dir) and CSV file (--pdbs_csv) with columns for PDB names (pdb), H (Hchain) and L (Lchain) chains
+        2) PDB directory (--pdb_dir) and CSV file (--pdbs_csv) with columns for PDB names (pdb), H and L chains 
         3) PDB directory (--pdb_dir). Warning: Will assume 1st chain is heavy, 2nd chain is light
         """
         )
         sys.exit(1)
-
-    # # Check that AntiFold weights are downloaded
-    # root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    # filename = "models/model.pt"
-    # model_path = f"{root_dir}/{filename}"
-    # if not os.path.exists(model_path):
-    #     log.warning(
-    #         f"Downloading AntiFold model weights from https://opig.stats.ox.ac.uk/data/downloads/AntiFold/models/model.pt to {model_path}"
-    #     )
-    #     url = "https://opig.stats.ox.ac.uk/data/downloads/AntiFold/models/model.pt"
-
-    #     os.makedirs(f"{root_dir}/models", exist_ok=True)
-    #     urllib.request.urlretrieve(url, filename)
 
     # Option 1: PDB file, check heavy and light chain
     if args.pdb_file:
@@ -282,7 +272,7 @@ def check_valid_input(args):
                 f"WARNING: Heavy/light chain(s) not specified for {_pdb}. Assuming 1st chain heavy, 2nd chain light."
             )
             log.warning(
-                f"WARNING: Specify manually with e.g. --heavy_chain H --light_chain L"
+                "WARNING: Specify manually with e.g. --heavy_chain H --light_chain L"
             )
 
     # Option 2: Check PDBs in PDB dir and CSV formatted correctly
@@ -298,7 +288,8 @@ def check_valid_input(args):
             and not args.custom_chain_mode
         ):
             log.error(
-                f"Multi-PDB input: Please specify CSV  with columns ['pdb', 'Hchain', 'Lchain'] with PDB names (no extension), H and L chains"
+                "Multi-PDB input: Please specify CSV  with columns ['pdb', 'Hchain', 'Lchain']" +
+                 "with PDB names (no extension), H and L chains"
             )
             log.error(f"CSV columns: {df.columns}")
             sys.exit(1)
@@ -329,9 +320,10 @@ def check_valid_input(args):
     elif args.pdb_dir:
         _dir = os.path.dirname(args.pdb_dir)
         log.warning(
-            f"WARNING: Heavy/light chains not specified for PDB/CIF files in folder {_dir}. Assuming 1st chain heavy, 2nd chain light."
+            f"WARNING: Heavy/light chains not specified for PDB/CIF files in folder {_dir}." +
+            "Assuming 1st chain heavy, 2nd chain light."
         )
-        log.warning(f"WARNING: Specify manually with --pdbs_csv CSV file")
+        log.warning("WARNING: Specify manually with --pdbs_csv CSV file")
 
     # ESM-IF1 mode
     if args.esm_if1_mode:
@@ -427,7 +419,8 @@ def main(args):
     # Extra: Sample sequences with num_seq_per_target >= 1
     if args.num_seq_per_target >= 1:
         log.info(
-            f"Will sample {args.num_seq_per_target} sequences from {len(pdbs_csv.values)} PDBs at temperature(s) {args.sampling_temp} and regions: {regions_to_mutate}"
+            f"Will sample {args.num_seq_per_target} sequences from {len(pdbs_csv.values)}" + 
+            "PDBs at temperature(s) {args.sampling_temp} and regions: {regions_to_mutate}"
         )
 
     # Load AntiFold or ESM-IF1 model
@@ -453,6 +446,8 @@ def main(args):
         seed=args.seed,
         save_flag=True,
     )
+
+    return pdb_output_dict
 
 
 if __name__ == "__main__":
@@ -483,7 +478,7 @@ if __name__ == "__main__":
 
     # Check valid input
     try:
-        log.info(f"Running inverse folding on PDB/CIFs ...")
+        log.info("Running inverse folding on PDB/CIFs ...")
         check_valid_input(args)
         main(args)
 
