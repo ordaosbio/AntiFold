@@ -161,11 +161,11 @@ def load_model(checkpoint_path: str = ""):
         # Suppress regression weights warning - not needed
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            model, _ = antifold.esm.pretrained.esm_if1_gvp4_t16_142M_UR50()
+            model, _ = models.antifold.antifold.esm.pretrained.esm_if1_gvp4_t16_142M_UR50()
 
     # Load AntiFold weights locally
     else:
-        model, _ = antifold.esm.pretrained._load_IF1_local()
+        model, _ = models.antifold.antifold.esm.pretrained._load_IF1_local()
         model = load_IF1_checkpoint(model, model_path)
 
     # Evaluation mode when predicting
@@ -204,7 +204,7 @@ def get_dataset_pdb_name_chainsname_res_posins_chains(dataset, idx):
 def logits_to_seqprobs_list(logits, tokens):
     """Convert logits (bs x 35 x L) ot list of L x 20 seqprobs"""
 
-    alphabet = antifold.esm.data.Alphabet.from_architecture("invariant_gvp")
+    alphabet = models.antifold.antifold.esm.data.Alphabet.from_architecture("invariant_gvp")
 
     mask_gap = tokens[:, 1:] != 30  # 30 is gap
     mask_pad = tokens[:, 1:] != alphabet.padding_idx  # 1 is padding
@@ -237,7 +237,7 @@ def get_dataset_dataloader(
     dataset.populate(pdbs_csv_or_dataframe, pdb_dir)
 
     # Prepare torch dataloader at specified batch size
-    alphabet = antifold.esm.data.Alphabet.from_architecture("invariant_gvp")
+    alphabet = models.antifold.antifold.esm.data.Alphabet.from_architecture("invariant_gvp")
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,
@@ -352,7 +352,7 @@ def predictions_list_to_df_logits_list(all_seqprobs_list, dataset, dataloader):
         assert len(seq_probs) == len(pdb_posins)
 
         # Logits to DataFrame
-        alphabet = antifold.esm.data.Alphabet.from_architecture("invariant_gvp")
+        alphabet = models.antifold.antifold.esm.data.Alphabet.from_architecture("invariant_gvp")
         df_logits = pd.DataFrame(data=seq_probs, columns=alphabet.all_toks[4:25],)
 
         # Limit to 20x amino-acids probs
