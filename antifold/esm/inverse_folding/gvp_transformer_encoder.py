@@ -10,7 +10,7 @@ import math
 
 import torch
 import torch.nn as nn
-from antifold.esm.modules import SinusoidalPositionalEmbedding
+from models.antifold.antifold.esm.modules import SinusoidalPositionalEmbedding
 
 from .features import DihedralFeatures, GVPInputFeaturizer
 from .gvp_encoder import GVPEncoder

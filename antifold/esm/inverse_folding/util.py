@@ -9,7 +9,7 @@ import biotite.structure
 import numpy as np
 import torch
 import torch.nn.functional as F
-from antifold.esm.data import BatchConverter
+from models.antifold.antifold.esm.data import BatchConverter
 from biotite.sequence import ProteinSequence
 from biotite.structure import filter_backbone, get_chains
 from biotite.structure.io import pdb, pdbx

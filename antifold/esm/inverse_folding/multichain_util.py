@@ -6,7 +6,7 @@
 
 import biotite.structure
 import numpy as np
-from antifold.esm.inverse_folding.util import (
+from models.antifold.antifold.esm.inverse_folding.util import (
     extract_coords_from_structure,
     get_encoder_output,
     get_sequence_loss,

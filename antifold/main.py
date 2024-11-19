@@ -12,7 +12,7 @@ ROOT_PATH = Path(os.path.dirname(__file__)).parent
 sys.path.insert(0, ROOT_PATH)
 
 
-from antifold.antiscripts import (  # noqa: E402
+from models.antifold.antifold.antiscripts import (  # noqa: E402
     df_logits_to_logprobs,
     extract_chains_biotite,
     generate_pdbs_csv,
