@@ -19,9 +19,9 @@ from biotite.structure.io import load_structure
 ROOT_PATH = Path(os.path.dirname(__file__)).parent
 sys.path.insert(0, ROOT_PATH)
 
-import antifold.esm  # noqa: E402
-from antifold.esm_util_custom import CoordBatchConverter_mask_gpu  # noqa: E402
-from antifold.if1_dataset import InverseData  # noqa: E402
+import models.antifold.antifold.esm  # noqa: E402
+from models.antifold.antifold.esm_util_custom import CoordBatchConverter_mask_gpu  # noqa: E402
+from models.antifold.antifold.if1_dataset import InverseData  # noqa: E402
 
 log = logging.getLogger(__name__)
 

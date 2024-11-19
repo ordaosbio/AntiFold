@@ -9,7 +9,7 @@ from typing import Dict, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
-from antifold.esm.rotary_embedding import RotaryEmbedding
+from models.antifold.antifold.esm.rotary_embedding import RotaryEmbedding
 from torch import Tensor, nn
 from torch.nn import Parameter
 

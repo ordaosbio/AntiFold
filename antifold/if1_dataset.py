@@ -10,7 +10,7 @@ import torch
 log = logging.getLogger(__name__)
 sys.path.insert(0, ".")
 
-from antifold.esm_multichain_util_custom import (  # noqa: E402
+from models.antifold.antifold.esm_multichain_util_custom import (  # noqa: E402
     concatenate_coords_any,
     concatenate_coords_HL,
     load_complex_coords,

@@ -93,14 +93,14 @@ def has_emb_layer_norm_before(model_state):
 
 
 def _load_model_and_alphabet_core_v1(model_data):
-    import antifold.esm  # since esm.inverse_folding is imported below, you actually have to re-import esm here
+    import models.antifold.antifold.esm  # since esm.inverse_folding is imported below, you actually have to re-import esm here
 
-    alphabet = antifold.esm.data.Alphabet.from_architecture(model_data["args"].arch)
+    alphabet = models.antifold.antifold.esm.data.Alphabet.from_architecture(model_data["args"].arch)
 
     if "invariant_gvp" in model_data["args"].arch:
-        import antifold.esm.inverse_folding.gvp_transformer
+        import models.antifold.antifold.esm.inverse_folding.gvp_transformer
 
-        model_type = antifold.esm.inverse_folding.gvp_transformer.GVPTransformerModel
+        model_type = models.antifold.antifold.esm.inverse_folding.gvp_transformer.GVPTransformerModel
         model_args = vars(model_data["args"])  # convert Namespace -> dict
 
         def update_name(s):
@@ -134,13 +134,13 @@ def _load_model_and_alphabet_core_v1(model_data):
 
 
 def _load_IF1_local():
-    import antifold.esm  # since esm.inverse_folding is imported below, you actually have to re-import esm here
+    import models.antifold.antifold.esm  # since esm.inverse_folding is imported below, you actually have to re-import esm here
 
-    alphabet = antifold.esm.data.Alphabet.from_architecture("vt_medium_with_invariant_gvp")
+    alphabet = models.antifold.antifold.esm.data.Alphabet.from_architecture("vt_medium_with_invariant_gvp")
 
-    import antifold.esm.inverse_folding.gvp_transformer
+    import models.antifold.antifold.esm.inverse_folding.gvp_transformer
 
-    model_type = antifold.esm.inverse_folding.gvp_transformer.GVPTransformerModel
+    model_type = models.antifold.antifold.esm.inverse_folding.gvp_transformer.GVPTransformerModel
     model_args = IF1_dict  # convert Namespace -> dict
 
     def update_name(s):

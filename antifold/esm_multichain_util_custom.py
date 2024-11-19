@@ -9,7 +9,9 @@ from typing import List
 
 import biotite.structure
 import numpy as np
-from antifold.esm.inverse_folding.util import get_encoder_output, get_sequence_loss, load_structure
+from models.antifold.antifold.esm.inverse_folding.util import (
+    get_encoder_output, get_sequence_loss, load_structure
+)
 
 # import torch
 from biotite.sequence import ProteinSequence

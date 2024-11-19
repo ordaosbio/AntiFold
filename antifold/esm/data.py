@@ -11,7 +11,7 @@ import shutil
 from typing import List, Sequence, Tuple, Union
 
 import torch
-from antifold.esm.constants import proteinseq_toks
+from models.antifold.antifold.esm.constants import proteinseq_toks
 
 RawMSA = Sequence[Tuple[str, str]]
 
